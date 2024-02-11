@@ -1,1 +1,151 @@
-https://www.kaggle.com/code/umesh22055/rmi-task-2/notebook
+import torch 
+from torch import nn
+import torchvision
+from torchvision import transforms
+from torchvision import datasets
+import numpy as np
+import cv2
+import os
+from os import listdir
+from os.path import isfile, join
+
+def __init__(self):
+        super().__init__()
+        #Block 1
+        self.conv1_block1=nn.Conv2d(in_channels=3,out_channels=16,kernel_size=3,stride=2,padding=2)
+        self.conv2_block1=nn.Conv2d(in_channels=16,out_channels=16,kernel_size=3,stride=2)
+        self.block1_skip=nn.Conv2d(in_channels=3,out_channels=16,kernel_size=1,stride=4)
+        
+        #Block 2
+        self.conv1_block2=nn.Conv2d(in_channels=16,out_channels=32,kernel_size=3,stride=1,padding=2)
+        self.conv2_block2=nn.Conv2d(in_channels=32,out_channels=32,kernel_size=3,stride=1)
+        self.block2_skip=nn.Conv2d(in_channels=16,out_channels=32,kernel_size=1,stride=1)
+        
+        #Block 3
+        self.conv1_block3=nn.Conv2d(in_channels=32,out_channels=48,kernel_size=3,stride=1,padding=2)
+        self.conv2_block3=nn.Conv2d(in_channels=48,out_channels=48,kernel_size=3,stride=1)
+        self.block3_skip=nn.Conv2d(in_channels=32,out_channels=48,kernel_size=1,stride=1)
+        
+        #Block 4
+        self.conv1_block4=nn.Conv2d(in_channels=48,out_channels=64,kernel_size=3,stride=1,padding=2)
+        self.conv2_block4=nn.Conv2d(in_channels=64,out_channels=64,kernel_size=3,stride=1)
+        self.block4_skip=nn.Conv2d(in_channels=48,out_channels=64,kernel_size=1,stride=1)
+        
+        #Block 5
+        self.conv1_block5=nn.Conv2d(in_channels=64,out_channels=80,kernel_size=3,stride=1,padding=2)
+        self.conv2_block5=nn.Conv2d(in_channels=80,out_channels=80,kernel_size=3,stride=1)
+        self.block5_skip=nn.Conv2d(in_channels=64,out_channels=80,kernel_size=1,stride=1)
+        
+        #Pooling Layer
+        self.pooling = nn.MaxPool2d(kernel_size=3, stride=2)
+        
+        # Global average pooling 
+        self.GAP=nn.AvgPool2d(kernel_size=3)
+        
+        
+        #Fully connected and softmax
+        self.fc_layer=nn.Linear(in_features=80,out_features=2)
+        
+        #softmax activation
+        self.softmax_layer=nn.Softmax(dim=0)
+        
+        
+    def forward_propagation(self,x):
+        #block 1
+        
+        block11=self.conv1_block1(x)
+        block12=self.conv2_block1(block11)
+        block1_skip=self.block1_skip(x)
+        self.block1_output=self.pooling(block12+block1_skip)
+        
+        #block2
+        
+        block21=self.conv1_block2(self.block1_output)
+        block22=self.conv2_block2(block21)
+        block2_skip=self.block2_skip(self.block1_output)
+        self.block2_output=self.pooling(block22+block2_skip)
+#block3
+        
+        block31=self.conv1_block3(self.block2_output)
+        block32=self.conv2_block3(block31)
+        block3_skip=self.block3_skip(self.block2_output)
+        self.block3_output=self.pooling(block32+block3_skip)
+        
+        #block4
+        
+        block41=self.conv1_block4(self.block3_output)
+        block42=self.conv2_block4(block41)
+        block4_skip=self.block4_skip(self.block3_output)
+        self.block4_output=self.pooling(block42+block4_skip)
+        
+        #block5
+        
+        block51=self.conv1_block5(self.block4_output)
+        block52=self.conv2_block5(block51)
+        block5_skip=self.block5_skip(self.block4_output)
+        self.block5_output=self.pooling(block52+block5_skip)
+        
+        #Global average pooling
+        
+        self.GAP_output=self.GAP(self.block5_output)
+        a=self.GAP_output
+        fc_input=a.flatten()
+        fc_input=fc_input.squeeze()
+
+        #Fully connect Layer
+
+        softmax_input=self.fc_layer(fc_input)
+        
+        #Softmax
+        self.y_pred=self.softmax_layer(softmax_input)
+        
+        return self.y_pred
+
+
+        model_0=TB_Classifier()
+       loss_fn=nn.CrossEntropyLoss()
+       optimizer=torch.optim.Adam(model_0.parameters(),lr=0.01)
+
+       y_target=torch.tensor((0,1))
+       y_target=y_target.type(torch.float32)
+
+
+      x = [f for f in listdir('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Normal') if isfile(join('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Normal',f))]       
+      x=np.array(x)
+      x_Normal=[]
+      for i in range(3500):
+    
+    a=x[i]
+    img=cv2.imread(os.path.join('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Normal',a))
+    x_NOR=np.array(img)
+    x_NOR=torch.tensor(x_NOR)
+    x_NOR=x_NOR.reshape(3,512,512)
+    x_NOR=x_NOR.type(torch.float32)
+    y_pred=model_0.forward_propagation(x_NOR)
+    loss=loss_fn(y_pred,y_target)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    y_target=torch.tensor((0,1))
+    y_target=y_target.type(torch.float32)
+
+   y = [f for f in listdir('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Tuberculosis') if isfile(join('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Tuberculosis',f))]       
+   y=np.array(y)
+  x_TB=[]
+   for i in range(700):
+    
+    a=y[i]
+    img=cv2.imread(os.path.join('/kaggle/input/tuberculosis-tb-chest-xray-dataset/TB_Chest_Radiography_Database/Tuberculosis',a))
+    x_TB=np.array(img)
+    x_TB=torch.tensor(x_TB)
+    x_TB=x_TB.reshape(3,512,512)
+    x_TB=x_TB.type(torch.float32)
+    y_pred=model_0.forward_propagation(x_TB)
+    loss=loss_fn(y_pred,y_target)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+
+
+
